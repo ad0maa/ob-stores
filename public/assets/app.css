@@ -85,3 +85,22 @@ dialog label { display: grid; gap: 0.2rem; margin-bottom: 0.75rem; }
 .move-checkout, .move-consume { color: var(--warn); }
 .move-faulty { color: var(--bad); font-weight: 600; }
 .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; padding: 0.75rem; }
+
+/* Planner (Vue) */
+.planner-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; margin-bottom: 0.75rem; }
+.planner-controls > label { display: flex; align-items: center; gap: 0.4rem; }
+.template-description { flex-basis: 100%; margin: 0; }
+.stepper { display: flex; align-items: center; gap: 0.3rem; }
+.stepper label { margin-right: 0.2rem; }
+.stepper button { width: 2rem; height: 2rem; font-size: 1.1rem; line-height: 1; padding: 0; }
+.stepper input { width: 4rem; height: 2rem; text-align: center; font-size: 1.05rem; }
+.plan-summary { padding: 0.45rem 0.75rem; border-radius: 4px; font-weight: 600; }
+.plan-summary.is-ready { background: var(--ok-bg); color: var(--accent); }
+.plan-summary.is-short { background: var(--bad-bg); color: var(--bad); }
+.plan tr.is-short { background: var(--bad-bg); }
+.plan tr.is-short .short { color: var(--bad); font-weight: 700; }
+.plan.is-stale tbody { opacity: 0.6; transition: opacity 0.1s 0.1s; }
+.meter-col { width: 8rem; }
+.meter { display: block; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--accent); }
+tr.is-short .meter span { background: var(--bad); }

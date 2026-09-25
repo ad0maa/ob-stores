@@ -25,6 +25,11 @@ Things the brief left open, and what was decided. Newest at the bottom of each s
 - **Receive modal uses a native `<dialog>`** rather than a jQuery plugin, because it gives focus handling and Esc-to-close for free. Everything else on that screen is deliberately old-style jQuery.
 - **Ledger filters by gear serial or by consumable.** For a consumable, the balance is across all its lots; for a serial it is 1 (in store) or 0 (out). The lot is shown on each row and links to its trace.
 
+- **Sub-kits can't be planned or packed directly.** `/api/templates` lists only top-level templates, and asking for a sub-kit's plan returns 404.
+- **Positions are 1 to 50.** That bound is in `RecipeExploder::MAX_POSITIONS`, and the Vue screen mirrors it.
+- **The Vue planner has no `<style>` blocks.** Its styles live in the one hand-written `app.css`, as the brief requires, so Vite emits JavaScript only.
+- **The planner URL is shareable** (`?template=2&positions=3`), kept in sync with `history.replaceState`.
+
 ## PHP 8.4 / MySQL 8 features used
 
 - **`PDO::connect()` (PHP 8.4)** in `src/Db.php`. It returns the driver-specific subclass (`Pdo\Mysql`) instead of a generic `PDO`, so MySQL-only methods and constants live on a MySQL-only class.
@@ -37,3 +42,5 @@ Things the brief left open, and what was decided. Newest at the bottom of each s
 - **`Random\Randomizer` with a seeded `Mt19937` engine (PHP 8.2)** makes the seeder deterministic without relying on global `mt_srand()` state.
 - **Window function (MySQL 8)**: the ledger's running balance is `SUM(qty) OVER (PARTITION BY … ORDER BY id)`, computed before `LIMIT`, so every page shows correct balances.
 - **Views** (`gear_item_status`, `lot_balances`) hold the "derive current state from the ledger" logic in one place.
+- **Property hook (PHP 8.4)**: `PlanLine::$shortfall` is a virtual property, `get => max(0, $this->required - $this->available)`. It reads like a field but is always computed, so it can never disagree with `required` and `available`.
+- **Recursive CTE (MySQL 8)**: `RecipeExploder` walks the template tree in one `WITH RECURSIVE` query, multiplying quantities down each level, then sums the leaves. The anchor casts to `UNSIGNED` because a recursive CTE's column types come from the anchor row only.
