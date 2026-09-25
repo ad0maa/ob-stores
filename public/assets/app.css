@@ -14,6 +14,9 @@
     --font: system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, monospace;
     --row: 1.9rem;
+    --page: 1200px;
+    /* Side padding that centres a --page-wide column on wide screens. */
+    --gutter: max(1rem, calc((100% - var(--page)) / 2));
 }
 
 * { box-sizing: border-box; }
@@ -22,13 +25,13 @@ a { color: var(--accent); }
 code, .mono { font-family: var(--mono); font-size: 0.92em; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
-.topbar { display: flex; align-items: center; gap: 1.5rem; padding: 0.5rem 1rem; background: var(--ink); color: #fff; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.5rem; padding: 0.5rem var(--gutter); background: var(--ink); color: #fff; }
 .topbar a { color: #d7dade; text-decoration: none; }
-.brand { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: #fff !important; }
+.brand { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; white-space: nowrap; color: #fff !important; }
 .topbar nav { display: flex; gap: 1rem; }
 .topbar nav a[aria-current="page"] { color: #fff; border-bottom: 2px solid #5fd3a6; }
 
-main { padding: 1rem; max-width: 1200px; }
+main { padding: 1rem var(--gutter); }
 h1 { font-size: 1.25rem; margin: 0.25rem 0 0.75rem; }
 h2 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
@@ -36,7 +39,7 @@ h2 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
 .facts dd { margin: 0; }
 
 /* Page furniture */
-.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
 .muted, .unit { color: var(--muted); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--line); border-radius: 3px; padding: 0 0.3em; color: var(--muted); background: var(--surface); }
@@ -50,7 +53,7 @@ button { padding: 0.2rem 0.6rem; border: 1px solid var(--line); border-radius: 3
 button:hover { border-color: var(--muted); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button:disabled { opacity: 0.6; cursor: progress; }
-#store-filter { width: 18rem; }
+#store-filter { width: min(18rem, 100%); }
 
 /* Dense operational tables */
 table.grid { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); }
@@ -78,7 +81,7 @@ dialog label { display: grid; gap: 0.2rem; margin-bottom: 0.75rem; }
 .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
 /* Ledger */
-.inline-form { display: flex; align-items: center; gap: 0.75rem; }
+.inline-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .inline-form label { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); }
 .move { font-size: 0.85em; }
 .move-receipt, .move-return { color: var(--accent); }
@@ -120,10 +123,23 @@ tr.is-faulty-row { background: var(--bad-bg); }
 .pack-form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.5rem 1rem; margin-top: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
 .pack-form h2 { flex-basis: 100%; margin: 0 0 0.25rem; }
 .pack-form label { display: grid; gap: 0.2rem; }
-.pack-form input[maxlength] { width: 20rem; }
+.pack-form input[maxlength] { width: min(20rem, 100%); }
 .pack-form button { align-self: center; height: 2rem; }
 .pack-form .form-error { flex-basis: 100%; }
 
 /* Keyboard */
 .grid tbody tr:focus { outline: 2px solid var(--focus); outline-offset: -2px; background: #eef3fd; }
-.keys-hint { padding: 0.5rem 1rem 1.5rem; color: var(--muted); font-size: 0.85em; }
+.keys-hint { padding: 0.5rem var(--gutter) 1.5rem; color: var(--muted); font-size: 0.85em; }
+
+/* Narrow screens: each table scrolls sideways inside its own box instead of
+   the whole page; the page itself never scrolls horizontally. */
+@media (max-width: 800px) {
+    :root { --gutter: 0.75rem; }
+    table.grid { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .filter { flex: 1; }
+    #store-filter { width: 100%; }
+    .keys-hint, .filter kbd { display: none; }
+    /* On a phone the planner's job is "am I short?": drop code and meter so required / available / short fit. */
+    .plan thead th:first-child, .plan td.mono, .plan .meter-col, .plan .unit { display: none; }
+    .grid th, .grid td { padding: 0 0.4rem; }
+}
