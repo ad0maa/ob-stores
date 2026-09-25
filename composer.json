@@ -1,0 +1,27 @@
+{
+    "name": "ad0maa/ob-stores",
+    "description": "Equipment store for a radio outside-broadcast team: kits, an append-only stock ledger and traceability. Vanilla PHP 8.4 + MySQL 8.4.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "~8.4.26",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "13.3.4"
+    },
+    "autoload": {
+        "psr-4": { "App\\": "src/" },
+        "files": ["src/helpers.php"]
+    },
+    "autoload-dev": {
+        "psr-4": { "Tests\\": "tests/" }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
