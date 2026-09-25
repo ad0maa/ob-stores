@@ -21,9 +21,19 @@ Things the brief left open, and what was decided. Newest at the bottom of each s
 - **A faulty return writes two rows**: a `return` and then a `faulty` (qty 0, with the note). The trail shows both "it came back" and "it's broken".
 - **`jobs.returned_at` is written once.** It is job metadata, not stock, so this does not break the append-only rule for `movements`.
 
+- **Timestamps are stored and shown in UTC.** There's one store, so there's no timezone handling. A multi-site version would store UTC and convert on display.
+- **Receive modal uses a native `<dialog>`** rather than a jQuery plugin, because it gives focus handling and Esc-to-close for free. Everything else on that screen is deliberately old-style jQuery.
+- **Ledger filters by gear serial or by consumable.** For a consumable, the balance is across all its lots; for a serial it is 1 (in store) or 0 (out). The lot is shown on each row and links to its trace.
+
 ## PHP 8.4 / MySQL 8 features used
 
 - **`PDO::connect()` (PHP 8.4)** in `src/Db.php`. It returns the driver-specific subclass (`Pdo\Mysql`) instead of a generic `PDO`, so MySQL-only methods and constants live on a MySQL-only class.
 - **`readonly` classes (PHP 8.2)** for `Response`: every property is set once in the constructor, and `withStatus()` returns a copy.
 - **MySQL 8 `CHECK` constraints** (enforced since 8.0.16) on `template_lines` (exactly one target) and `movements` (exactly one of gear item or lot).
 - **Triggers that `SIGNAL`** on `UPDATE` and `DELETE` of `movements`, so append-only is enforced by the database, not just by convention.
+- **Backed enum `MovementType`** mirrors the MySQL `ENUM` column. `MovementType::from($row['type'])` turns a database string into a typed value, and `match` over it gives the display label.
+- **`new` without extra parentheses (PHP 8.4)**: `new ReceiveConsumable($db)->receive(...)`. Before 8.4 this needed `(new ReceiveConsumable($db))->receive(...)`.
+- **Typed class constants (PHP 8.3)**: `private const int DUPLICATE_KEY = 1062;`.
+- **`Random\Randomizer` with a seeded `Mt19937` engine (PHP 8.2)** makes the seeder deterministic without relying on global `mt_srand()` state.
+- **Window function (MySQL 8)**: the ledger's running balance is `SUM(qty) OVER (PARTITION BY … ORDER BY id)`, computed before `LIMIT`, so every page shows correct balances.
+- **Views** (`gear_item_status`, `lot_balances`) hold the "derive current state from the ledger" logic in one place.

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Env;
 use App\Http\HttpError;
 use App\Http\Response;
+use App\Service\InsufficientStock;
+use App\Service\ValidationError;
 
 // Front controller: every request that isn't a real file lands here.
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -28,6 +30,10 @@ try {
     }
     $router = require dirname(__DIR__) . '/src/routes.php';
     $response = $router->dispatch($method, $path);
+} catch (ValidationError $error) {
+    $response = Response::json(['error' => 'Please check the highlighted fields', 'details' => $error->errors], 422);
+} catch (InsufficientStock $error) {
+    $response = Response::json(['error' => $error->getMessage(), 'details' => ['shortfalls' => $error->shortfalls]], 409);
 } catch (HttpError $error) {
     $response = $wantsJson
         ? Response::json(['error' => $error->getMessage(), 'details' => $error->details], $error->status)

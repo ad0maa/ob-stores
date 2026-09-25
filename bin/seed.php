@@ -8,17 +8,29 @@ declare(strict_types=1);
 use App\Db;
 use App\Env;
 use App\Migrator;
+use App\Seed\DemoSeeder;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 Env::load(dirname(__DIR__) . '/.env');
 
+$started = hrtime(true);
 Migrator::run(Env::get('DB_NAME'), fresh: true);
 $db = Db::connect();
-$catalogue = require dirname(__DIR__) . '/database/seed/catalogue.php';
 
-$insertType = $db->prepare('INSERT INTO gear_types (code, name, category) VALUES (?, ?, ?)');
-foreach ($catalogue['gear'] as [$code, $name, $category]) {
-    $insertType->execute([$code, $name, $category]);
-}
+$seeder = new DemoSeeder(
+    $db,
+    require dirname(__DIR__) . '/database/seed/catalogue.php',
+    historyStart: new DateTimeImmutable('-18 months midnight'),
+);
+$seeder->catalogue();
+$seeder->openingStock();
 
-echo 'Seeded ' . count($catalogue['gear']) . " gear types\n";
+$counts = $db->query(<<<'SQL'
+    SELECT (SELECT COUNT(*) FROM gear_items) AS gear_items,
+           (SELECT COUNT(*) FROM lots) AS lots,
+           (SELECT COUNT(*) FROM kit_templates) AS templates,
+           (SELECT COUNT(*) FROM jobs) AS jobs,
+           (SELECT COUNT(*) FROM movements) AS movements
+    SQL)->fetch();
+
+printf("Seeded in %.1fs: %s\n", (hrtime(true) - $started) / 1e9, http_build_query($counts, arg_separator: ', '));
