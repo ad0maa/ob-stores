@@ -1,0 +1,8 @@
+.git
+.env
+.phpunit.cache
+vendor
+node_modules
+public/build
+public/assets/vendor
+docs/screenshots
