@@ -5,3 +5,4 @@
 .env
 .phpunit.cache/
 .DS_Store
+.env.railway
