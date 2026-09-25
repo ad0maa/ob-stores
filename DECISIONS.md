@@ -11,7 +11,8 @@ These are the things the brief left open, what was decided, and why.
 - **jQuery 3.7.1 rather than 4.x** for the legacy screen, because a real legacy screen would be on 3.x. It comes from the pinned npm package and `npm run build` copies it into `public/assets/vendor/`. It is not downloaded from a CDN.
 - **Migrations are split on semicolons that end a line** and run one statement at a time, so a failure points at a single statement. MySQL commits DDL implicitly, so migrations are not wrapped in a transaction.
 - **Local preview config lives outside the repo.** Nothing in the repo refers to a local absolute path.
-- **Migrations run on every deploy.** `railway.json` sets `php bin/migrate.php` as Railway's pre-deploy command: it runs in the new image before traffic switches, and a failure stops the deploy. The runner skips files it has already applied, so running it every time is safe.
+- **Migrations run on every deploy.** `php bin/migrate.php` is Railway's pre-deploy command: it runs in the new image before traffic switches, and a failure stops the deploy. The runner skips files it has already applied, so running it every time is safe. It's in `railway.json` and also set on the service, because the first deploy after adding it to `railway.json` alone didn't run it.
+- **The database connection retries while MySQL wakes up.** Railway's free plan sleeps idle services, and the web container can wake before MySQL, so the first request failed with `Connection refused`. `Db::connect()` now retries errors 2002, 2006 and 2013 ("no server there yet") for about 8 s, then gives up. Anything else, such as a bad password, fails at once.
 - **The seeder waits up to 30 s for MySQL**, so the four-command start works straight after `docker compose up -d`.
 - **The favicon and logo are inline SVG.** No downloaded assets.
 
