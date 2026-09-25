@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { getJson } from './api.js'
+import { getJson, postJson } from './api.js'
 
 const MAX_POSITIONS = 50
 
@@ -14,6 +14,13 @@ const error = ref('')
 const template = computed(() => templates.value.find((t) => t.id === templateId.value))
 const gear = computed(() => plan.value?.lines.filter((line) => line.kind === 'gear') ?? [])
 const consumables = computed(() => plan.value?.lines.filter((line) => line.kind === 'consumable') ?? [])
+const jobName = ref('')
+const jobDate = ref(new Date().toLocaleDateString('en-CA'))
+const packing = ref(false)
+const fieldErrors = ref({})
+const conflict = ref([])
+const canPack = computed(() => plan.value && !plan.value.shortfalls && !loading.value && !packing.value && validPositions.value)
+
 const validPositions = computed(() => Number.isInteger(positions.value) && positions.value >= 1 && positions.value <= MAX_POSITIONS)
 
 onMounted(async () => {
@@ -53,6 +60,30 @@ async function loadPlan() {
     if (e.name !== 'AbortError') error.value = e.message
   } finally {
     if (inFlight === controller) loading.value = false
+  }
+}
+
+// The plan is advisory; the server re-checks everything under lock. If
+// another crew packed in the meantime we get a 409 with what's now short.
+async function pack() {
+  packing.value = true
+  fieldErrors.value = {}
+  conflict.value = []
+  try {
+    const job = await postJson('/api/jobs', {
+      template_id: templateId.value,
+      positions: positions.value,
+      name: jobName.value,
+      job_date: jobDate.value,
+    })
+    location.assign(job.url)
+  } catch (e) {
+    if (e.status === 422) fieldErrors.value = e.details
+    else if (e.status === 409) {
+      conflict.value = e.details.shortfalls
+      loadPlan()
+    } else error.value = e.message
+    packing.value = false
   }
 }
 
@@ -113,5 +144,28 @@ function step(by) {
         </tr>
       </tbody>
     </table>
+
+    <form class="pack-form" novalidate @submit.prevent="pack">
+      <h2>Pack for a job</h2>
+      <label>
+        Job name
+        <input v-model.trim="jobName" maxlength="120" placeholder="e.g. Saturday cup tie" :aria-invalid="!!fieldErrors.name">
+        <span class="field-error">{{ fieldErrors.name }}</span>
+      </label>
+      <label>
+        Job date
+        <input v-model="jobDate" type="date" :aria-invalid="!!fieldErrors.job_date">
+        <span class="field-error">{{ fieldErrors.job_date }}</span>
+      </label>
+      <button type="submit" class="primary" :disabled="!canPack">
+        {{ packing ? 'Packing…' : `Pack ${plan.positions} × ${plan.template.name}` }}
+      </button>
+      <div v-if="conflict.length" class="form-error" role="alert">
+        Stock changed before this was packed, so nothing was taken. Now short:
+        <ul>
+          <li v-for="line in conflict" :key="line.kind + line.itemId">{{ line.name }}: need {{ line.required }}, {{ line.available }} left</li>
+        </ul>
+      </div>
+    </form>
   </template>
 </template>

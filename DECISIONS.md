@@ -30,6 +30,15 @@ Things the brief left open, and what was decided. Newest at the bottom of each s
 - **The Vue planner has no `<style>` blocks.** Its styles live in the one hand-written `app.css`, as the brief requires, so Vite emits JavaScript only.
 - **The planner URL is shareable** (`?template=2&positions=3`), kept in sync with `history.replaceState`.
 
+- **Availability is re-read under lock with `FOR SHARE` subqueries.** In InnoDB a subquery inside a `FOR UPDATE` query is still a plain snapshot read unless it has its own locking clause. Under REPEATABLE READ the snapshot is taken at the transaction's first plain read, so the second gear type would be checked against stale data. Every availability read in `PackJob` is therefore a locking read. The alternative, switching the transaction to READ COMMITTED, would also work, but it is less visible in the code.
+- **Blocking locks, not `SKIP LOCKED`.** A second packer waits for the first, then sees what's left. `SKIP LOCKED` would let it grab different codecs without waiting, which is better for high-throughput queues but harder to reason about here.
+- **A short pack reports every shortfall**, not just the first, so the planner can show the whole problem at once.
+- **The return form is a plain HTML form POST** with no JavaScript. The app therefore shows all three generations: plain form (job return), jQuery (store) and Vue (planner), all using the same services.
+- **Seeded history goes through `PackJob` and `ReturnJob`** (with an injected timestamp) rather than bulk `INSERT`s, so the seed data obeys the same rules as real use.
+- **Lot codes are unique per consumable, not globally.** Tracing a bare lot code that matches two items asks which one you mean.
+- **The job page is the third trace** ("from a job, show everything that went"): serials link to their own trace and lots link to theirs.
+- **Pagination happens before the joins.** `/jobs` paginates in a derived table before counting per-job movements (270 ms → 26 ms). `/ledger` runs its window over `movements` alone, then joins names onto the 50 rows shown (220 ms → 120 ms).
+
 ## PHP 8.4 / MySQL 8 features used
 
 - **`PDO::connect()` (PHP 8.4)** in `src/Db.php`. It returns the driver-specific subclass (`Pdo\Mysql`) instead of a generic `PDO`, so MySQL-only methods and constants live on a MySQL-only class.
@@ -44,3 +53,5 @@ Things the brief left open, and what was decided. Newest at the bottom of each s
 - **Views** (`gear_item_status`, `lot_balances`) hold the "derive current state from the ledger" logic in one place.
 - **Property hook (PHP 8.4)**: `PlanLine::$shortfall` is a virtual property, `get => max(0, $this->required - $this->available)`. It reads like a field but is always computed, so it can never disagree with `required` and `available`.
 - **Recursive CTE (MySQL 8)**: `RecipeExploder` walks the template tree in one `WITH RECURSIVE` query, multiplying quantities down each level, then sums the leaves. The anchor casts to `UNSIGNED` because a recursive CTE's column types come from the anchor row only.
+- **Asymmetric visibility (PHP 8.4)**: `GearItem` has `public private(set) string $status`. Anyone can read it, but only `apply(MovementType)` can change it, and the trace page rebuilds it by replaying the item's ledger rows. This differs from `readonly` because the class itself can keep changing it after construction.
+- **Locking reads (MySQL/InnoDB)**: `SELECT … FOR UPDATE` on the never-updated `gear_items` and `lots` rows acts as a mutex per gear type or consumable. `FOR SHARE` on the availability subqueries makes them read the latest committed data instead of the REPEATABLE READ snapshot.

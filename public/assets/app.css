@@ -104,3 +104,22 @@ dialog label { display: grid; gap: 0.2rem; margin-bottom: 0.75rem; }
 .meter { display: block; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .meter span { display: block; height: 100%; background: var(--accent); }
 tr.is-short .meter span { background: var(--bad); }
+
+/* Jobs */
+.badge-out { background: var(--warn-bg); color: var(--warn); }
+.badge-faulty { background: var(--bad-bg); color: var(--bad); }
+.check { display: inline-flex; align-items: center; gap: 0.3rem; }
+.note-input { width: 100%; min-width: 16rem; }
+
+/* Trace */
+.trace-forms { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; }
+.status-available { background: var(--ok-bg); color: var(--accent); }
+.status-out { background: var(--warn-bg); color: var(--warn); }
+.status-faulty { background: var(--bad-bg); color: var(--bad); }
+tr.is-faulty-row { background: var(--bad-bg); }
+.pack-form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.5rem 1rem; margin-top: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.pack-form h2 { flex-basis: 100%; margin: 0 0 0.25rem; }
+.pack-form label { display: grid; gap: 0.2rem; }
+.pack-form input[maxlength] { width: 20rem; }
+.pack-form button { align-self: center; height: 2rem; }
+.pack-form .form-error { flex-basis: 100%; }

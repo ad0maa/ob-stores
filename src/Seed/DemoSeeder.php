@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Seed;
 
+use App\Service\InsufficientStock;
+use App\Service\PackJob;
 use App\Service\ReceiveConsumable;
+use App\Service\ReturnJob;
 use DateTimeImmutable;
 use PDO;
 use Random\Engine\Mt19937;
@@ -89,6 +92,116 @@ final class DemoSeeder
                 $this->deliver($code, $consumable, $this->historyStart->modify("-{$daysBefore} days"));
             }
         }
+    }
+
+    /**
+     * Simulate day-by-day use from historyStart to $until through the real
+     * PackJob and ReturnJob services, so every seeded ledger row went through
+     * the same locked transaction a user's pack would.
+     *
+     * @return array{packed: int, skipped: int, faulty: int, deliveries: int}
+     */
+    public function history(DateTimeImmutable $until): array
+    {
+        $packJob = new PackJob($this->db);
+        $returnJob = new ReturnJob($this->db);
+        $templates = $this->db->query('SELECT code, id FROM kit_templates WHERE NOT is_subkit')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $stats = ['packed' => 0, 'skipped' => 0, 'faulty' => 0, 'deliveries' => 0];
+        /** @var array<int, DateTimeImmutable> $dueBack job id => return date */
+        $dueBack = [];
+        $round = 0;
+
+        for ($day = $this->historyStart; $day < $until; $day = $day->modify('+1 day')) {
+            // Evening returns from earlier jobs; a handful of items come back faulty.
+            foreach ($dueBack as $jobId => $returnOn) {
+                if ($returnOn > $day) {
+                    continue;
+                }
+                $faulty = [];
+                foreach ($this->db->query("SELECT gear_item_id FROM movements WHERE job_id = {$jobId} AND type = 'checkout'")->fetchAll(PDO::FETCH_COLUMN) as $itemId) {
+                    if ($this->random->getInt(1, 700) === 1) {
+                        $faulty[$itemId] = self::FAULTS[$this->random->getInt(0, count(self::FAULTS) - 1)];
+                    }
+                }
+                $returnJob->return($jobId, $faulty, $day->setTime(18, $this->random->getInt(0, 59)));
+                $stats['faulty'] += count($faulty);
+                unset($dueBack[$jobId]);
+            }
+
+            // Morning deliveries for anything below its reorder point.
+            foreach ($this->belowReorder() as $code) {
+                $this->deliver($code, $this->catalogue['consumables'][$code], $day);
+                $stats['deliveries']++;
+            }
+
+            // Busier at weekends, when most sport happens.
+            $isWeekend = (int) $day->format('N') >= 6;
+            $jobsToday = $isWeekend ? $this->random->getInt(1, 3) : $this->random->getInt(0, 2);
+            if ($day->format('N') === '6') {
+                $round++;
+            }
+            for ($n = 0; $n < $jobsToday; $n++) {
+                [$code, $positions, $name] = $this->pickJob($day, $round, $n);
+                try {
+                    $jobId = $packJob->pack($templates[$code], $positions, $name, $day->format('Y-m-d'), $day->setTime(7 + $n, $this->random->getInt(0, 59)));
+                } catch (InsufficientStock) {
+                    $stats['skipped']++;
+                    continue;
+                }
+                $dueBack[$jobId] = $day->modify('+' . $this->random->getInt(0, 2) . ' days');
+                $stats['packed']++;
+            }
+        }
+
+        return $stats;
+    }
+
+    private const array FAULTS = [
+        'Intermittent crackle on channel 2',
+        'Dropped out on air, twice',
+        'Cracked housing',
+        'Battery won\'t hold charge',
+        'Loose XLR socket',
+        'Hangs on boot, needs reflash',
+        'Headband snapped',
+    ];
+
+    /** @return array{string, int, string} template code, positions, job name */
+    private function pickJob(DateTimeImmutable $day, int $round, int $n): array
+    {
+        $month = (int) $day->format('n');
+        $isSummer = $month >= 5 && $month <= 8;
+        $options = $isSummer
+            ? ['CRICKET-BOX' => 3, 'STREET-PACK' => 3, 'LIVE-MUSIC' => 2, 'BREAKFAST-OB' => 2, 'RACE-DAY' => 2, 'FOOTY-BOX' => 1]
+            : ['FOOTY-BOX' => 5, 'STREET-PACK' => 3, 'BREAKFAST-OB' => 2, 'RACE-DAY' => 2, 'LIVE-MUSIC' => 1];
+
+        $ticket = $this->random->getInt(1, array_sum($options));
+        foreach ($options as $code => $weight) {
+            if (($ticket -= $weight) <= 0) {
+                break;
+            }
+        }
+
+        return match ($code) {
+            'FOOTY-BOX' => ['FOOTY-BOX', $this->random->getInt(2, 4), "Footy round {$round}: " . ($n % 2 === 0 ? 'home game' : 'away game')],
+            'CRICKET-BOX' => ['CRICKET-BOX', $this->random->getInt(3, 5), 'Cricket: day ' . $this->random->getInt(1, 4) . ' commentary'],
+            'STREET-PACK' => ['STREET-PACK', $this->random->getInt(1, 3), 'Street talk: ' . ['market day', 'commuter vox pops', 'school gates', 'high street', 'late-night shift'][$this->random->getInt(0, 4)]],
+            'BREAKFAST-OB' => ['BREAKFAST-OB', $this->random->getInt(2, 4), 'Breakfast roadshow: ' . $day->format('D j M')],
+            'LIVE-MUSIC' => ['LIVE-MUSIC', $this->random->getInt(2, 5), 'Acoustic session ' . $day->format('j M')],
+            'RACE-DAY' => ['RACE-DAY', $this->random->getInt(2, 4), 'Race day: ' . ['afternoon card', 'evening meeting', 'feature race'][$this->random->getInt(0, 2)]],
+        };
+    }
+
+    /** @return list<string> consumable codes currently below their reorder point */
+    private function belowReorder(): array
+    {
+        return $this->db->query(<<<'SQL'
+            SELECT c.code, c.reorder_point
+            FROM consumables c
+            LEFT JOIN lot_balances b ON b.consumable_id = c.id
+            GROUP BY c.id
+            HAVING COALESCE(SUM(b.on_hand), 0) < c.reorder_point
+            SQL)->fetchAll(PDO::FETCH_COLUMN);
     }
 
     /** @param array{string, string, int, int, string} $consumable */

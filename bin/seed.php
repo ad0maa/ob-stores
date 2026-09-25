@@ -24,6 +24,7 @@ $seeder = new DemoSeeder(
 );
 $seeder->catalogue();
 $seeder->openingStock();
+$history = $seeder->history(until: new DateTimeImmutable('today'));
 
 $counts = $db->query(<<<'SQL'
     SELECT (SELECT COUNT(*) FROM gear_items) AS gear_items,
@@ -34,3 +35,4 @@ $counts = $db->query(<<<'SQL'
     SQL)->fetch();
 
 printf("Seeded in %.1fs: %s\n", (hrtime(true) - $started) / 1e9, http_build_query($counts, arg_separator: ', '));
+printf("History: %s\n", http_build_query($history, arg_separator: ', '));

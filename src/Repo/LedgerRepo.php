@@ -24,23 +24,32 @@ final class LedgerRepo
     {
         [$where, $params] = $this->filter($serial, $consumableId);
 
+        // Window over the narrow movements table only, then join the names onto
+        // just the 50 rows on this page.
         $statement = $this->db->prepare(<<<SQL
-            SELECT m.id, m.type, m.qty, m.note, m.created_at, m.job_id, j.name AS job_name,
+            WITH page AS (
+                SELECT m.id, m.type, m.qty, m.note, m.created_at, m.job_id, m.gear_item_id, m.lot_id,
+                       SUM(m.qty) OVER (
+                           PARTITION BY m.gear_item_id, l.consumable_id
+                           ORDER BY m.id
+                       ) AS balance
+                FROM movements m
+                LEFT JOIN lots l ON l.id = m.lot_id
+                WHERE {$where}
+                ORDER BY m.id DESC
+                LIMIT :limit OFFSET :offset
+            )
+            SELECT p.id, p.type, p.qty, p.note, p.created_at, p.job_id, j.name AS job_name,
                    gi.serial, gt.name AS gear_name,
                    l.lot_code, c.id AS consumable_id, c.code AS consumable_code, c.name AS consumable_name,
-                   SUM(m.qty) OVER (
-                       PARTITION BY m.gear_item_id, l.consumable_id
-                       ORDER BY m.id
-                   ) AS balance
-            FROM movements m
-            LEFT JOIN gear_items gi ON gi.id = m.gear_item_id
+                   p.balance
+            FROM page p
+            LEFT JOIN gear_items gi ON gi.id = p.gear_item_id
             LEFT JOIN gear_types gt ON gt.id = gi.gear_type_id
-            LEFT JOIN lots l ON l.id = m.lot_id
+            LEFT JOIN lots l ON l.id = p.lot_id
             LEFT JOIN consumables c ON c.id = l.consumable_id
-            LEFT JOIN jobs j ON j.id = m.job_id
-            WHERE {$where}
-            ORDER BY m.id DESC
-            LIMIT :limit OFFSET :offset
+            LEFT JOIN jobs j ON j.id = p.job_id
+            ORDER BY p.id DESC
             SQL);
         foreach ($params as $name => $value) {
             $statement->bindValue($name, $value);
@@ -51,7 +60,6 @@ final class LedgerRepo
 
         $count = $this->db->prepare(<<<SQL
             SELECT COUNT(*) FROM movements m
-            LEFT JOIN gear_items gi ON gi.id = m.gear_item_id
             LEFT JOIN lots l ON l.id = m.lot_id
             WHERE {$where}
             SQL);
@@ -70,7 +78,7 @@ final class LedgerRepo
     private function filter(?string $serial, ?int $consumableId): array
     {
         return match (true) {
-            $serial !== null => ['gi.serial = :serial', ['serial' => $serial]],
+            $serial !== null => ['m.gear_item_id = (SELECT id FROM gear_items WHERE serial = :serial)', ['serial' => $serial]],
             $consumableId !== null => ['l.consumable_id = :consumable', ['consumable' => $consumableId]],
             default => ['1 = 1', []],
         };
