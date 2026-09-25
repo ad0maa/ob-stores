@@ -13,6 +13,20 @@ use App\Seed\DemoSeeder;
 require dirname(__DIR__) . '/vendor/autoload.php';
 Env::load(dirname(__DIR__) . '/.env');
 
+// A freshly started MySQL container takes a few seconds to accept connections.
+for ($attempt = 1; ; $attempt++) {
+    try {
+        Db::connect('');
+        break;
+    } catch (PDOException $e) {
+        if ($attempt === 30) {
+            throw $e;
+        }
+        echo "Waiting for MySQL…\n";
+        sleep(1);
+    }
+}
+
 $started = hrtime(true);
 Migrator::run(Env::get('DB_NAME'), fresh: true);
 $db = Db::connect();

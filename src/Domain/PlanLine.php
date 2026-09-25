@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain;
 
-use JsonSerializable;
-
 /** One leaf of an exploded recipe: how many are needed against how many are available now. */
-final class PlanLine implements JsonSerializable
+final class PlanLine
 {
     public function __construct(
         public readonly string $kind,
@@ -20,14 +18,8 @@ final class PlanLine implements JsonSerializable
     ) {
     }
 
-    /** A virtual property (PHP 8.4 hook): computed on read, never stored. */
+    /** A virtual property (PHP 8.4 hook): computed on read, never stored, but still included by json_encode(). */
     public int $shortfall {
         get => max(0, $this->required - $this->available);
-    }
-
-    /** @return array<string, string|int> */
-    public function jsonSerialize(): array
-    {
-        return get_object_vars($this) + ['shortfall' => $this->shortfall];
     }
 }

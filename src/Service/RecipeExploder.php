@@ -26,7 +26,7 @@ final class RecipeExploder
      *   so a headset needed by three positions becomes one row of 3.
      * Final select: attach current availability from the ledger views.
      */
-    private const string SQL = <<<'SQL'
+    public const string SQL = <<<'SQL'
         WITH RECURSIVE tree (gear_type_id, consumable_id, child_template_id, mult, depth) AS (
             SELECT gear_type_id, consumable_id, child_template_id,
                    CAST(qty * IF(per_position, :positions, 1) AS UNSIGNED),

@@ -11,7 +11,9 @@ $nav = ['/store' => 'Store', '/planner' => 'Planner', '/jobs' => 'Jobs', '/trace
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <title><?= e($title) ?> · ob-stores</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='4' fill='%231c1d1f'/%3E%3Cpath d='M5 18V10m3.5 8V6m3.5 12v-6m3.5 6V8M19 18v-3' stroke='%235fd3a6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="/assets/app.css">
+    <script src="/assets/keys.js" defer></script>
     <?= $head ?>
 </head>
 <body>
@@ -29,5 +31,6 @@ $nav = ['/store' => 'Store', '/planner' => 'Planner', '/jobs' => 'Jobs', '/trace
 <main>
 <?= $content ?>
 </main>
+<footer class="keys-hint"><kbd>j</kbd> <kbd>k</kbd> move between rows · <kbd>Enter</kbd> open · <kbd>/</kbd> filter the store</footer>
 </body>
 </html>

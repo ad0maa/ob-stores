@@ -123,3 +123,7 @@ tr.is-faulty-row { background: var(--bad-bg); }
 .pack-form input[maxlength] { width: 20rem; }
 .pack-form button { align-self: center; height: 2rem; }
 .pack-form .form-error { flex-basis: 100%; }
+
+/* Keyboard */
+.grid tbody tr:focus { outline: 2px solid var(--focus); outline-offset: -2px; background: #eef3fd; }
+.keys-hint { padding: 0.5rem 1rem 1.5rem; color: var(--muted); font-size: 0.85em; }
