@@ -6,7 +6,7 @@ The app uses **vanilla PHP 8.4 and MySQL 8.4**, with no framework and no ORM. It
 
 > I wanted to exercise the same primitives an ERP needs (kits built from a bill of materials, an auditable stock ledger, lot and serial traceability, and a legacy screen next to a modern one) in a world I know from broadcast.
 
-**Live demo:** <https://web-production-d36e98.up.railway.app> (Railway free tier: it sleeps when idle, so the first request can take a few seconds; hosted in US West, so pages are slower than the local numbers below)
+**Live demo:** <https://ob-stores.adamtunchay.dev> (Railway free tier: it sleeps when idle, so the first request can take a few seconds; hosted in US West, so pages are slower than the local numbers below)
 
 ![Kit planner with live shortfalls](docs/screenshots/planner.png)
 
