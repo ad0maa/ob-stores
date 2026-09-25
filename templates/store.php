@@ -52,7 +52,7 @@ $category = null;
             <tr class="group" data-group="<?= e($category) ?>"><th colspan="6"><?= e($category) ?></th></tr>
         <?php endif ?>
         <tr data-search="<?= e(strtolower($type['code'] . ' ' . $type['name'] . ' ' . $type['category'])) ?>" data-in-group="<?= e($category) ?>">
-            <td class="mono"><?= e($type['code']) ?></td>
+            <td class="mono"><a href="/gear/<?= e($type['id']) ?>"><?= e($type['code']) ?></a></td>
             <td><?= e($type['name']) ?></td>
             <td class="num"><?= e($type['available']) ?></td>
             <td class="num<?= $type['out'] > 0 ? ' is-out' : '' ?>"><?= e($type['out']) ?></td>

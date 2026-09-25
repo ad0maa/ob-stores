@@ -116,7 +116,7 @@ final class PackJob
               AND (SELECT m.type FROM movements m
                    WHERE m.gear_item_id = gi.id
                    ORDER BY m.id DESC LIMIT 1
-                   FOR SHARE) IN ('receipt', 'return')
+                   FOR SHARE) IN ('receipt', 'return', 'repaired')
             ORDER BY gi.id
             LIMIT :needed
             SQL);

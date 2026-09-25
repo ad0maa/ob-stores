@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controller\ApiController;
+use App\Controller\GearController;
 use App\Controller\JobsController;
 use App\Controller\LedgerController;
 use App\Controller\PlannerController;
@@ -25,6 +26,9 @@ $router->get('/', fn () => Response::redirect('/store'));
 
 // Legacy screen (server-rendered + jQuery)
 $router->get('/store', fn () => new StoreController($db())->index());
+$router->get('/gear/{id}', fn (int $id) => new GearController($db())->show($id));
+$router->post('/gear/{id}/items/{item}/fault', fn (int $id, int $item) => new GearController($db())->reportFault($id, $item));
+$router->post('/gear/{id}/items/{item}/repair', fn (int $id, int $item) => new GearController($db())->repair($id, $item));
 $router->get('/ledger', fn () => new LedgerController($db())->index());
 $router->get('/jobs', fn () => new JobsController($db())->index());
 $router->get('/jobs/{id}', fn (int $id) => new JobsController($db())->show($id));

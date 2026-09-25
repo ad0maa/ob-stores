@@ -11,6 +11,7 @@ These are the things the brief left open, what was decided, and why.
 - **jQuery 3.7.1 rather than 4.x** for the legacy screen, because a real legacy screen would be on 3.x. It comes from the pinned npm package and `npm run build` copies it into `public/assets/vendor/`. It is not downloaded from a CDN.
 - **Migrations are split on semicolons that end a line** and run one statement at a time, so a failure points at a single statement. MySQL commits DDL implicitly, so migrations are not wrapped in a transaction.
 - **Local preview config lives outside the repo.** Nothing in the repo refers to a local absolute path.
+- **Migrations run on every deploy.** `railway.json` sets `php bin/migrate.php` as Railway's pre-deploy command: it runs in the new image before traffic switches, and a failure stops the deploy. The runner skips files it has already applied, so running it every time is safe.
 - **The seeder waits up to 30 s for MySQL**, so the four-command start works straight after `docker compose up -d`.
 - **The favicon and logo are inline SVG.** No downloaded assets.
 
@@ -18,7 +19,7 @@ These are the things the brief left open, what was decided, and why.
 
 - **Stock and gear status are derived, never stored.** They come from one `movements` table, through two views: `gear_item_status` (latest movement per item) and `lot_balances` (sum of signed movements per lot). Triggers make `movements` append-only in the database itself.
 - **One `movements` table for gear and consumables**, with a `CHECK` that each row has exactly one of `gear_item_id` or `lot_id`. It was chosen over two ledgers, which would double every audit query, and over cached status columns, which would contradict "the ledger is the truth".
-- **Faulty is terminal.** There is no repair flow, because maintenance is out of scope.
+- **Faulty until marked repaired.** The brief put maintenance schedules out of scope, but gear has to come back into service. A repair is its own `repaired` ledger row (qty 0, with a note), so the history keeps both the fault and the fix. Faults can also be reported on the shelf, outside a job. Both actions live on the gear-type page (`/gear/{id}`), as plain form posts.
 - **A faulty return writes two rows**: a `return`, then a `faulty` row (qty 0, with the note). The trail shows both "it came back" and "it's broken".
 - **Packed consumables count as consumed.** Nothing comes back on return.
 - **`jobs.returned_at` is written once.** It is job metadata, not stock, so the append-only rule for `movements` still holds.
@@ -33,6 +34,7 @@ These are the things the brief left open, what was decided, and why.
 - **Blocking locks, not `SKIP LOCKED`.** A second packer waits for the first, then sees what's left. `SKIP LOCKED` suits high-throughput queues, but it is harder to reason about here.
 - **A short pack reports every shortfall**, not just the first, so the planner can show the whole problem at once.
 - **The planner's availability is advisory.** The server re-checks under lock, and if another crew packed in the meantime the planner gets a 409 listing what is now short, then re-plans.
+- **Packing always takes the lowest-id available serial.** It's simple and deterministic, but the first few items of each type do most of the work: the gear page shows one router on 320 jobs and several on none. A real store would rotate stock by picking the least-used item first. That's a one-line `ORDER BY` change, left as a talking point.
 - **Seeded history goes through `PackJob` and `ReturnJob`** (with an injected timestamp) rather than bulk `INSERT`s, so the seed data obeys the same rules as real use.
 - **`bin/race.php` proves the locking with two real processes** (`pcntl_fork`, one connection each). It is a CLI demo only, so the app does not depend on `pcntl`.
 
@@ -73,6 +75,7 @@ These are the things the brief left open, what was decided, and why.
 - **Locking reads (InnoDB)**: `FOR UPDATE` and `FOR SHARE`, as described under "Packing and concurrency".
 - **`CHECK` constraints (MySQL 8.0.16+)**: before 8.0.16, MySQL parsed them and ignored them. Now they're enforced.
 - **Triggers that `SIGNAL`** refuse `UPDATE` and `DELETE` on `movements`.
+- **Appending an `ENUM` value is instant (MySQL 8)**: migration 003 adds `repaired` to `movements.type`. Adding a value at the end of an `ENUM` only changes table metadata, so it doesn't rebuild the table however many rows it has. Inserting a value in the middle would force a full rebuild.
 
 ## Notes from the build
 

@@ -29,7 +29,7 @@ final class GearItem
     public function apply(MovementType $movement): void
     {
         $this->status = match ($movement) {
-            MovementType::Receipt, MovementType::Return => 'available',
+            MovementType::Receipt, MovementType::Return, MovementType::Repaired => 'available',
             MovementType::Checkout => 'out',
             MovementType::Faulty => 'faulty',
             MovementType::Consume => throw new LogicException('Gear is checked out, not consumed'),

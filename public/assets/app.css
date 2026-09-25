@@ -106,6 +106,7 @@ dialog label { display: grid; gap: 0.2rem; margin-bottom: 0.75rem; }
 .meter-col { width: 8rem; }
 .meter { display: block; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .meter span { display: block; height: 100%; background: var(--accent); }
+.meter-inline { display: none; }
 tr.is-short .meter span { background: var(--bad); }
 
 /* Jobs */
@@ -142,4 +143,16 @@ tr.is-faulty-row { background: var(--bad-bg); }
     /* On a phone the planner's job is "am I short?": drop code and meter so required / available / short fit. */
     .plan thead th:first-child, .plan td.mono, .plan .meter-col, .plan .unit { display: none; }
     .grid th, .grid td { padding: 0 0.4rem; }
+    /* Coverage moves under the item name instead of its own column. */
+    .plan .meter-inline { display: block; height: 4px; margin: 0.15rem 0 0.3rem; }
+    .plan tbody td { padding-top: 0.3rem; }
 }
+
+/* Gear type page */
+.crumbs { margin: 0; font-size: 0.85em; color: var(--muted); }
+.counts { display: flex; gap: 0.4rem; margin: 0; }
+.row-form { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.row-form input { width: 16rem; }
+.actions-cell { text-align: right; }
+.actions-cell .form-error { margin: 0.2rem 0 0; white-space: normal; }
+.move-repaired { color: var(--accent); font-weight: 600; }

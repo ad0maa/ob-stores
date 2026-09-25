@@ -156,14 +156,15 @@ final class DemoSeeder
         return $stats;
     }
 
+    // Generic enough to fit any gear type; kept at seven so the seeded history doesn't shift.
     private const array FAULTS = [
-        'Intermittent crackle on channel 2',
+        'Intermittent fault, worse when moved',
         'Dropped out on air, twice',
         'Cracked housing',
-        'Battery won\'t hold charge',
-        'Loose XLR socket',
-        'Hangs on boot, needs reflash',
-        'Headband snapped',
+        'Won\'t power on',
+        'Loose connector',
+        'Water damage after a wet match',
+        'Damaged in transit',
     ];
 
     /** @return array{string, int, string} template code, positions, job name */

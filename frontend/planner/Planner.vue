@@ -87,6 +87,9 @@ async function pack() {
   }
 }
 
+// How much of the requirement is available right now, capped at 100%.
+const cover = (line) => Math.min(100, (line.available / line.required) * 100)
+
 function step(by) {
   const next = (validPositions.value ? positions.value : 1) + by
   positions.value = Math.min(MAX_POSITIONS, Math.max(1, next))
@@ -132,13 +135,16 @@ function step(by) {
         <tr class="group"><th colspan="6">{{ label }}</th></tr>
         <tr v-for="line in rows" :key="line.kind + line.itemId" :class="{ 'is-short': line.shortfall > 0 }">
           <td class="mono">{{ line.code }}</td>
-          <td>{{ line.name }}</td>
+          <td>
+            {{ line.name }}
+            <span class="meter meter-inline" aria-hidden="true"><span :style="{ width: cover(line) + '%' }"></span></span>
+          </td>
           <td class="num">{{ line.required.toLocaleString('en-GB') }} <span class="unit">{{ line.unit }}</span></td>
           <td class="num">{{ line.available.toLocaleString('en-GB') }}</td>
           <td class="num short">{{ line.shortfall || '' }}</td>
           <td class="meter-col">
-            <span class="meter" :aria-label="`${Math.min(100, Math.round((line.available / line.required) * 100))}% covered`">
-              <span :style="{ width: Math.min(100, (line.available / line.required) * 100) + '%' }"></span>
+            <span class="meter" :aria-label="`${Math.round(cover(line))}% covered`">
+              <span :style="{ width: cover(line) + '%' }"></span>
             </span>
           </td>
         </tr>

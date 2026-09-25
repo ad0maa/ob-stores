@@ -12,6 +12,7 @@ enum MovementType: string
     case Checkout = 'checkout';
     case Return = 'return';
     case Faulty = 'faulty';
+    case Repaired = 'repaired';
 
     public function label(): string
     {
@@ -21,6 +22,7 @@ enum MovementType: string
             self::Checkout => 'Checked out',
             self::Return => 'Returned',
             self::Faulty => 'Marked faulty',
+            self::Repaired => 'Repaired',
         };
     }
 }
